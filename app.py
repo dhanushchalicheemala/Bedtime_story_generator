@@ -22,13 +22,13 @@ if st.button("Generate Story & Image"):
         # Generate story and image
         result = generate_story_and_image(story_topic, story_length)
 
-        # 📖 Display Story
+        # 📸 Display Image First (Fixed use_column_width)
+        st.subheader("🎨 Illustration for Your Story")
+        st.image(result["image"], caption="A cozy bedtime scene", use_container_width=True)  # ✅ Fixed parameter
+
+        # 📖 Display Story After Image
         st.subheader("📖 Your AI-Generated Bedtime Story")
         st.write(result["story"])
-
-        # 📸 Display Image
-        st.subheader("🎨 Illustration for Your Story")
-        st.image(result["image"], caption="A cozy bedtime scene", use_column_width=True)
 
     else:
         st.warning("⚠️ Please enter a valid story topic.")

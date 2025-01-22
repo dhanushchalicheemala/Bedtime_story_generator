@@ -70,35 +70,43 @@ def generate_voice_narration(text):
     return temp_audio.name
 
 def generate_pdf(title, story, image_url):
-    """Generates a PDF file with the story and illustration."""
+    """Generates a well-formatted PDF file with the story and illustration."""
     temp_pdf = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf")
-
-    # Create a PDF canvas
+    
+    # Define PDF Canvas
     c = canvas.Canvas(temp_pdf.name, pagesize=letter)
+    page_width, page_height = letter  # Get page size
 
-    # Set Title
-    c.setFont("Helvetica-Bold", 16)
-    c.drawString(100, 750, f"Cozy Story Time 🛏️📖 - {title}")
+    # Set title at the top
+    c.setFont("Helvetica-Bold", 18)
+    c.drawString(50, page_height - 80, f"Cozy Story Time 🛏️📖 - {title}")
 
-    # Download the image from the URL
+    # Download and add the image below the title
     try:
         response = requests.get(image_url, stream=True)
         if response.status_code == 200:
             img = Image.open(response.raw)
             img_reader = ImageReader(img)
 
-            # Resize and add the image to PDF
-            c.drawImage(img_reader, 100, 500, width=300, height=300)
+            # Adjust image placement (below the title, centered)
+            img_width = 250  # Fixed width
+            img_height = 250  # Fixed height
+            img_x = (page_width - img_width) / 2  # Center image
+            img_y = page_height - 350  # Adjust Y-position below title
+
+            c.drawImage(img_reader, img_x, img_y, width=img_width, height=img_height)
 
     except Exception as e:
         print("Error fetching image:", e)
 
-    # Add Story Text
+    # Add story text below the image with proper spacing
+    text_start_y = img_y - 50  # Leave space below the image
     c.setFont("Helvetica", 12)
-    text = c.beginText(100, 470)
+    text = c.beginText(50, text_start_y)
     text.setFont("Helvetica", 12)
     text.setLeading(14)
 
+    # Split text into lines
     for line in story.split("\n"):
         text.textLine(line)
 

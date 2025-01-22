@@ -1,9 +1,11 @@
 import openai
 import os
 import tempfile
-from pydub import AudioSegment
+import requests
+from PIL import Image
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
+from reportlab.lib.utils import ImageReader
 
 # Initialize OpenAI client
 client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
@@ -43,7 +45,7 @@ def generate_story_and_image(story_topic, story_length="short"):
     # Generate voice narration using OpenAI's TTS API
     audio_file_path = generate_voice_narration(story_text)
 
-    # Generate a downloadable PDF
+    # Generate a downloadable PDF with the image
     pdf_file_path = generate_pdf(story_topic, story_text, image_url)
 
     return {
@@ -70,21 +72,37 @@ def generate_voice_narration(text):
 def generate_pdf(title, story, image_url):
     """Generates a PDF file with the story and illustration."""
     temp_pdf = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf")
-    
+
+    # Create a PDF canvas
     c = canvas.Canvas(temp_pdf.name, pagesize=letter)
+
+    # Set Title
     c.setFont("Helvetica-Bold", 16)
     c.drawString(100, 750, f"Cozy Story Time 🛏️📖 - {title}")
-    
+
+    # Download the image from the URL
+    try:
+        response = requests.get(image_url, stream=True)
+        if response.status_code == 200:
+            img = Image.open(response.raw)
+            img_reader = ImageReader(img)
+
+            # Resize and add the image to PDF
+            c.drawImage(img_reader, 100, 500, width=300, height=300)
+
+    except Exception as e:
+        print("Error fetching image:", e)
+
+    # Add Story Text
     c.setFont("Helvetica", 12)
-    text = c.beginText(100, 720)
+    text = c.beginText(100, 470)
     text.setFont("Helvetica", 12)
     text.setLeading(14)
 
-    # Split text into lines
     for line in story.split("\n"):
         text.textLine(line)
 
     c.drawText(text)
     c.save()
-    
+
     return temp_pdf.name

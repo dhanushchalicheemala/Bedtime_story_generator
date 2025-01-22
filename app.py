@@ -21,7 +21,7 @@ story_topic = st.text_input("✨ Enter a Bedtime Story Topic:", "A little bunny 
 story_length = st.selectbox("🕒 Choose story length:", ["Short", "Medium"], help="Short: 2-3 minutes | Medium: 5-7 minutes")
 
 # 🎬 Generate Story Button
-if st.button("Generate Story, Image & Narration"):
+if st.button("Generate Story"):
     if st.session_state.story_count < MAX_STORIES:
         if story_topic.strip():
             st.info("🪄 Creating your Bedtime Story... Please wait ⏳")
@@ -39,7 +39,7 @@ if st.button("Generate Story, Image & Narration"):
                 st.audio(audio_file, format="audio/mp3")
 
             # 📖 Display Story
-            st.subheader("📖 Your AI-Generated Bedtime Story")
+            st.subheader("📖 Your Generated Bedtime Story")
             st.write(result["story"])
 
             # 📄 Download Story as PDF

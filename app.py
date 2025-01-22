@@ -1,24 +1,38 @@
 import streamlit as st
-from story_generator import generate_story
+from story_generator import generate_story_and_image
 
-# Web App Title
-st.title("📖 AI Story Generator")
+# 🎨 Set Streamlit Page Configuration
+st.set_page_config(page_title="Cozy Story Time 🛏️📖", layout="centered")
 
-# Description
-st.write("Enter a simple idea for a story, and AI will generate a creative 100-word short story for you.")
+# 📖 Web App Title
+st.title("🌙 Cozy Story Time 🛏️📖")
 
-# User Input: Single Story Idea
-story_idea = st.text_area("Enter a brief story idea", "A scientist discovers a portal to another dimension.")
+# 📝 Description
+st.write("Enter a simple story idea, and AI will generate a **gentle bedtime story** with a **beautiful illustration**.")
 
-# Generate Story Button
-if st.button("Generate Story"):
-    if story_idea.strip():  # Ensure the input is not empty
-        story = generate_story(story_idea, word_limit=100)
-        st.subheader("Generated Story")
-        st.write(story)
+# 📌 User Inputs
+story_topic = st.text_input("✨ Enter a bedtime story topic:", "A little bunny who can't sleep")
+story_length = st.selectbox("🕒 Choose story length:", ["short", "medium"], help="Short: 2-3 minutes | Medium: 5-7 minutes")
+
+# 🎬 Generate Story Button
+if st.button("Generate Story & Image"):
+    if story_topic.strip():
+        st.info("🪄 Creating your bedtime story... Please wait ⏳")
+
+        # Generate story and image
+        result = generate_story_and_image(story_topic, story_length)
+
+        # 📖 Display Story
+        st.subheader("📖 Your AI-Generated Bedtime Story")
+        st.write(result["story"])
+
+        # 📸 Display Image
+        st.subheader("🎨 Illustration for Your Story")
+        st.image(result["image"], caption="A cozy bedtime scene", use_column_width=True)
+
     else:
-        st.warning("Please enter a story idea before generating.")
+        st.warning("⚠️ Please enter a valid story topic.")
 
-# Footer
+# 🎨 Footer
 st.markdown("---")
-st.markdown("Created with ❤️ using OpenAI & Streamlit")
+st.markdown("✨ Created with ❤️ using OpenAI & Streamlit ✨")

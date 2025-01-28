@@ -3,4 +3,8 @@ openai
 python-dotenv
 pydub
 reportlab
+gspread
+google-auth
+google-auth-oauthlib
+google-auth-httplib2
 

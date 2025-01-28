@@ -4,6 +4,7 @@ import pandas as pd
 import gspread
 from google.oauth2.service_account import Credentials
 import sqlite3
+import json
 
 from story_generator import generate_story_and_image
 
@@ -71,10 +72,11 @@ st.markdown("---")
 st.subheader("📢 Parent Feedback & Suggestions")
 
 # Google Sheets API Setup
-SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
-SERVICE_ACCOUNT_FILE = "google_sheets_credentials.json"
+# Load credentials from Streamlit secrets
+service_account_info = st.secrets["google_sheets"]
+creds = Credentials.from_service_account_info(service_account_info)
 
-creds = Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE, scopes=SCOPES)
+# Authenticate with Google Sheets
 client = gspread.authorize(creds)
 
 # Open Google Sheet

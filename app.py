@@ -24,7 +24,7 @@ def reset_tokens():
 # Reset tokens if needed
 reset_tokens()
 
-# 📖 Web App Title (Without Token Counter)
+# 📖 Web App Title
 st.title("🌙 Cozy Story Time 🛏️📖")
 
 # 📝 Description
@@ -80,11 +80,9 @@ if generate_button:
                     mime="application/pdf"
                 )
 
-            # 🔢 Deduct a Token
+            # 🔢 Deduct a Token and Force UI Update
             st.session_state.tokens -= 1
-
-            # Update the token counter immediately
-            st.experimental_rerun()
+            st.rerun()  # ✅ Updated function to refresh UI
 
         else:
             st.warning("⚠️ Please enter a valid story topic.")

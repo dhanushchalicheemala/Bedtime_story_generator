@@ -58,7 +58,7 @@ if generate_button:
     if st.session_state.tokens > 0:
         if story_topic.strip():
             st.session_state.loading = True  # Start loading state
-            st.experimental_rerun()  # Force UI update
+            st.rerun()  # ✅ Updated UI Refresh
 
             # Display loading message
             with st.spinner("🪄 Creating your Bedtime Story... Please wait ⏳"):
@@ -73,7 +73,7 @@ if generate_button:
             # Deduct a Token
             st.session_state.tokens -= 1
             st.session_state.loading = False  # Stop loading state
-            st.experimental_rerun()  # Refresh UI
+            st.rerun()  # ✅ Corrected UI Update
         else:
             st.warning("⚠️ Please enter a valid story topic.")
     else:

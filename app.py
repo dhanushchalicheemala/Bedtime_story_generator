@@ -24,16 +24,8 @@ def reset_tokens():
 # Reset tokens if needed
 reset_tokens()
 
-# 📖 Web App Title with Token Counter (No Full Width)
-st.markdown(
-    f"""
-    <h1 style="display:inline-block;">🌙 Cozy Story Time 🛏️📖</h1>
-    <span style="display:inline-block; font-size:18px; font-weight:bold; color:#F4A261; margin-left:20px;">
-        🪙 {MAX_TOKENS - st.session_state.tokens}/{MAX_TOKENS} Stories Used
-    </span>
-    """,
-    unsafe_allow_html=True
-)
+# 📖 Web App Title (Without Token Counter)
+st.title("🌙 Cozy Story Time 🛏️📖")
 
 # 📝 Description
 st.write("Enter a simple story idea, and this will generate a **gentle Bedtime Story** with a **beautiful illustration and voice narration**.")
@@ -42,8 +34,22 @@ st.write("Enter a simple story idea, and this will generate a **gentle Bedtime S
 story_topic = st.text_input("✨ Enter a Bedtime Story Topic:", "A little bunny who can't sleep")
 story_length = st.selectbox("🕒 Choose story length:", ["Short", "Medium"], help="Short: 2-3 minutes | Medium: 5-7 minutes")
 
-# 🎬 Generate Story Button
-if st.button("Generate Story"):
+# 🎬 Generate Story Button with Token Counter Next to It
+col1, col2 = st.columns([3, 1])
+with col1:
+    generate_button = st.button("🎬 Generate Story")
+with col2:
+    st.markdown(
+        f"""
+        <div style="text-align:center; padding:5px; font-size:16px; font-weight:bold; color:#F4A261; border:2px solid #F4A261; border-radius:10px;">
+            🪙 {MAX_TOKENS - st.session_state.tokens}/{MAX_TOKENS} Stories Used
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+# 🎬 Generate Story Action
+if generate_button:
     if st.session_state.tokens > 0:
         if story_topic.strip():
             st.info("🪄 Creating your Bedtime Story... Please wait ⏳")

@@ -1,5 +1,6 @@
 import streamlit as st
 from story_generator import generate_story_and_image
+import time
 
 # 🎨 Set Streamlit Page Configuration
 st.set_page_config(page_title="Cozy Story Time 🛏️📖", layout="centered")
@@ -10,11 +11,24 @@ st.title("🌙 Cozy Story Time 🛏️📖")
 # 📝 Description
 st.write("Enter a simple story idea, and this will generate a **gentle Bedtime Story** with a **beautiful illustration and voice narration**.")
 
-# 📌 Set a Usage Limit (Max 2 Stories per Session)
-if "story_count" not in st.session_state:
-    st.session_state.story_count = 0
+# 📌 Token System Implementation
+TOKEN_RESET_TIME = 8 * 60 * 60  # 8 hours in seconds
+MAX_TOKENS = 2  # Number of allowed story generations
 
-MAX_STORIES = 2
+# Initialize session state for tokens
+if "tokens" not in st.session_state:
+    st.session_state.tokens = MAX_TOKENS
+    st.session_state.token_timestamp = time.time()
+
+# Function to reset tokens after the set time period
+def reset_tokens():
+    elapsed_time = time.time() - st.session_state.token_timestamp
+    if elapsed_time > TOKEN_RESET_TIME:
+        st.session_state.tokens = MAX_TOKENS
+        st.session_state.token_timestamp = time.time()
+
+# Reset tokens if the time has passed
+reset_tokens()
 
 # 📌 User Inputs
 story_topic = st.text_input("✨ Enter a Bedtime Story Topic:", "A little bunny who can't sleep")
@@ -22,7 +36,7 @@ story_length = st.selectbox("🕒 Choose story length:", ["Short", "Medium"], he
 
 # 🎬 Generate Story Button
 if st.button("Generate Story"):
-    if st.session_state.story_count < MAX_STORIES:
+    if st.session_state.tokens > 0:
         if story_topic.strip():
             st.info("🪄 Creating your Bedtime Story... Please wait ⏳")
 
@@ -52,13 +66,13 @@ if st.button("Generate Story"):
                     mime="application/pdf"
                 )
 
-            # 🔢 Increment Story Count
-            st.session_state.story_count += 1
+            # 🔢 Deduct a Token
+            st.session_state.tokens -= 1
 
         else:
             st.warning("⚠️ Please enter a valid story topic.")
     else:
-        st.error("🚫 You have reached the **maximum limit of 2 stories per session**.")
+        st.error("🚫 You have reached the **maximum limit of 2 stories**. Please wait **8 hours** for token refresh.")
 
 # 🎨 Footer
 st.markdown("---")

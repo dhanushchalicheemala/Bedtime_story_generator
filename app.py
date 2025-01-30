@@ -9,10 +9,14 @@ st.set_page_config(page_title="Cozy Story Time 🛏️📖", layout="centered")
 TOKEN_RESET_TIME = 8 * 60 * 60  # 8 hours in seconds
 MAX_TOKENS = 2  # Number of allowed story generations
 
-# Initialize session state for tokens
+# Initialize session state for tokens and generated story
 if "tokens" not in st.session_state:
     st.session_state.tokens = MAX_TOKENS
     st.session_state.token_timestamp = time.time()
+    st.session_state.generated_story = None  # Store last generated story
+    st.session_state.generated_image = None  # Store last generated image
+    st.session_state.generated_audio = None  # Store last generated audio
+    st.session_state.generated_pdf = None  # Store last generated PDF
 
 # Function to reset tokens after the set time period
 def reset_tokens():
@@ -57,37 +61,40 @@ if generate_button:
             # Generate story, image, audio, and PDF
             result = generate_story_and_image(story_topic, story_length)
 
-            # 📸 Display Image First
-            st.subheader("🎨 Illustration for Your Story")
-            st.image(result["image"], caption="A cozy bedtime scene", use_container_width=True)
+            # Store generated content in session state to prevent UI refresh loss
+            st.session_state.generated_story = result["story"]
+            st.session_state.generated_image = result["image"]
+            st.session_state.generated_audio = result["audio"]
+            st.session_state.generated_pdf = result["pdf"]
 
-            # 🔊 Play Voice Narration
-            st.subheader("🔊 Listen to the Story")
-            with open(result["audio"], "rb") as audio_file:
-                st.audio(audio_file, format="audio/mp3")
-
-            # 📖 Display Story
-            st.subheader("📖 Your Generated Bedtime Story")
-            st.write(result["story"])
-
-            # 📄 Download Story as PDF
-            st.subheader("📄 Download Story")
-            with open(result["pdf"], "rb") as pdf_file:
-                st.download_button(
-                    label="📥 Download as PDF",
-                    data=pdf_file,
-                    file_name=f"{story_topic}.pdf",
-                    mime="application/pdf"
-                )
-
-            # 🔢 Deduct a Token and Force UI Update
+            # 🔢 Deduct a Token
             st.session_state.tokens -= 1
-            st.rerun()  # ✅ Updated function to refresh UI
 
         else:
             st.warning("⚠️ Please enter a valid story topic.")
     else:
         st.error("🚫 You have reached the **maximum limit of 2 stories**. Please wait **8 hours** for token refresh.")
+
+# 🎨 Display Story, Image, Audio, and PDF if available
+if st.session_state.generated_story:
+    st.subheader("🎨 Illustration for Your Story")
+    st.image(st.session_state.generated_image, caption="A cozy bedtime scene", use_container_width=True)
+
+    st.subheader("🔊 Listen to the Story")
+    with open(st.session_state.generated_audio, "rb") as audio_file:
+        st.audio(audio_file, format="audio/mp3")
+
+    st.subheader("📖 Your Generated Bedtime Story")
+    st.write(st.session_state.generated_story)
+
+    st.subheader("📄 Download Story")
+    with open(st.session_state.generated_pdf, "rb") as pdf_file:
+        st.download_button(
+            label="📥 Download as PDF",
+            data=pdf_file,
+            file_name=f"{story_topic}.pdf",
+            mime="application/pdf"
+        )
 
 # 🎨 Footer
 st.markdown("---")

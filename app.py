@@ -3,7 +3,7 @@ from story_generator import generate_story_and_image
 import time
 
 # 🎨 Set Streamlit Page Configuration
-st.set_page_config(page_title="Cozy Story Time 🛏️📖", layout="centered")
+st.set_page_config(page_title="Cozy Story Time 🛏️📖", layout="wide")
 
 # 📖 Web App Title
 st.title("🌙 Cozy Story Time 🛏️📖")
@@ -29,6 +29,16 @@ def reset_tokens():
 
 # Reset tokens if the time has passed
 reset_tokens()
+
+# 📌 Show Token Counter in UI (Top Right)
+st.markdown(
+    f"""
+    <div style='position:fixed; top:10px; right:20px; background-color:#F4A261; padding:8px 16px; border-radius:10px; color:white; font-weight:bold; font-size:16px;'>
+        🪙 {MAX_TOKENS - st.session_state.tokens}/{MAX_TOKENS} Stories Used
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 
 # 📌 User Inputs
 story_topic = st.text_input("✨ Enter a Bedtime Story Topic:", "A little bunny who can't sleep")
@@ -69,10 +79,13 @@ if st.button("Generate Story"):
             # 🔢 Deduct a Token
             st.session_state.tokens -= 1
 
+            # Update the token counter immediately
+            st.experimental_rerun()
+
         else:
             st.warning("⚠️ Please enter a valid story topic.")
     else:
-        st.error("🚫 You have reached the **maximum limit of 2 stories**. Please wait **8 hours** for token refresh.")
+        st.error("🚫 You have reached the **Maximum limit of 2 Stories**. Please wait **8 hours** for token refresh.")
 
 # 🎨 Footer
 st.markdown("---")

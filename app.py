@@ -15,7 +15,7 @@ st.write("Enter a simple story idea, and this will generate a **gentle Bedtime S
 
 # 📌 Token System Implementation
 TOKEN_RESET_TIME = 8 * 60 * 60  # 8 hours in seconds
-MAX_TOKENS = 2  # Number of allowed story generations
+MAX_TOKENS = 4  # Number of allowed story generations
 
 # Initialize session state for tokens
 if "tokens" not in st.session_state:

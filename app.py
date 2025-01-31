@@ -1,53 +1,77 @@
 import streamlit as st
-from story_generator import generate_story_text, generate_story_image, generate_story_audio, generate_story_pdf
+import time
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
+from story_generator import generate_story_and_image
 
-# Set Streamlit Page Configuration
+# 🎨 Set Streamlit Page Configuration
 st.set_page_config(page_title="Cozy Story Time 🛏️📖", layout="centered")
 
-# App Title
+# 📖 Web App Title
 st.title("🌙 Cozy Story Time 🛏️📖")
 
-# Description
+# 📝 Description
 st.write("Enter a simple story idea, and this will generate a **gentle Bedtime Story** with a **beautiful illustration and voice narration**.")
 
-# Token-based System
-if "story_tokens" not in st.session_state:
-    st.session_state.story_tokens = 2  # Max 2 stories per session
+# 📌 Token System Implementation
+TOKEN_RESET_TIME = 8 * 60 * 60  # 8 hours in seconds
+MAX_TOKENS = 2  # Number of allowed story generations
 
-# User Inputs
+# Initialize session state for tokens
+if "tokens" not in st.session_state:
+    st.session_state.tokens = MAX_TOKENS
+    st.session_state.token_timestamp = time.time()
+    st.session_state.story_cache = {}  # Cache to store generated stories
+
+# Function to reset tokens after the set time period
+def reset_tokens():
+    elapsed_time = time.time() - st.session_state.token_timestamp
+    if elapsed_time > TOKEN_RESET_TIME:
+        st.session_state.tokens = MAX_TOKENS
+        st.session_state.token_timestamp = time.time()
+
+# Reset tokens if the time has passed
+reset_tokens()
+
+# 📌 User Inputs
 story_topic = st.text_input("✨ Enter a Bedtime Story Topic:", "A little bunny who can't sleep")
-story_length = st.selectbox("🕒 Choose story length:", ["Short", "Medium"])
+story_length = st.selectbox("🕒 Choose story length:", ["Short", "Medium"], help="Short: 2-3 minutes | Medium: 5-7 minutes")
 
-# Show Token Indicator Next to Button
-col1, col2 = st.columns([4, 1])
-with col1:
-    generate_button = st.button("Generate Story")
-with col2:
-    st.markdown(f"🪙 **{2 - st.session_state.story_tokens}/2 Stories Used**", unsafe_allow_html=True)
+# 📊 Show Token Usage
+st.markdown(f"🪙 **{MAX_TOKENS - st.session_state.tokens}/{MAX_TOKENS} Stories Used**", unsafe_allow_html=True)
 
-# Generate Story
-if generate_button:
-    if st.session_state.story_tokens > 0:
+# 🎬 Generate Story Button
+if st.button("Generate Story"):
+    if st.session_state.tokens > 0:
         if story_topic.strip():
-            with st.spinner("🪄 Creating your Bedtime Story... Please wait ⏳"):
-                story = generate_story_text(story_topic, story_length)
-                image = generate_story_image(story_topic)
-                audio = generate_story_audio(story)
-                pdf = generate_story_pdf(story, image)
+            st.info("🪄 Creating your Bedtime Story... Please wait ⏳")
 
-            # Display Story Content
+            # Check cache to avoid redundant processing
+            if story_topic in st.session_state.story_cache:
+                result = st.session_state.story_cache[story_topic]
+            else:
+                # Use ThreadPoolExecutor to run the story generation asynchronously
+                with ThreadPoolExecutor() as executor:
+                    future = executor.submit(generate_story_and_image, story_topic, story_length)
+                    result = future.result()
+                    st.session_state.story_cache[story_topic] = result  # Store in cache
+
+            # 📸 Display Image First
             st.subheader("🎨 Illustration for Your Story")
-            st.image(image, caption="A cozy bedtime scene", use_column_width=True)
+            st.image(result["image"], caption="A cozy bedtime scene", use_container_width=True)
 
+            # 🔊 Play Voice Narration
             st.subheader("🔊 Listen to the Story")
-            with open(audio, "rb") as audio_file:
+            with open(result["audio"], "rb") as audio_file:
                 st.audio(audio_file, format="audio/mp3")
 
+            # 📖 Display Story
             st.subheader("📖 Your Generated Bedtime Story")
-            st.write(story)
+            st.write(result["story"])
 
+            # 📄 Download Story as PDF
             st.subheader("📄 Download Story")
-            with open(pdf, "rb") as pdf_file:
+            with open(result["pdf"], "rb") as pdf_file:
                 st.download_button(
                     label="📥 Download as PDF",
                     data=pdf_file,
@@ -55,11 +79,14 @@ if generate_button:
                     mime="application/pdf"
                 )
 
-            # Deduct Token & Refresh UI
-            st.session_state.story_tokens -= 1
-            st.experimental_rerun()
+            # 🔢 Deduct a Token
+            st.session_state.tokens -= 1
 
         else:
             st.warning("⚠️ Please enter a valid story topic.")
     else:
-        st.error("🚫 You have reached the **maximum limit of 2 stories per session**.")
+        st.error("🚫 You have reached the **maximum limit of 2 stories**. Please wait **8 hours** for token refresh.")
+
+# 🎨 Footer
+st.markdown("---")
+st.markdown("✨ Created with ❤️ using OpenAI & Streamlit ✨")

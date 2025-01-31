@@ -1,85 +1,131 @@
 import openai
 import os
+import tempfile
 import requests
-from fpdf import FPDF
-from gtts import gTTS
+from PIL import Image
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
+from reportlab.lib.utils import ImageReader
 
-# Load OpenAI API Key from Environment Variables
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-openai.api_key = OPENAI_API_KEY
+# Initialize OpenAI client
+client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-def generate_story_text(story_topic, story_length):
-    """Generates a bedtime story text based on the topic and length."""
-    prompt = f"""
-    Create a gentle bedtime story for children aged 2-5 years old about {story_topic}.
-    Story length: {story_length}
-
-    Story Requirements:
-    - Transform the given topic into a calm, bedtime-appropriate narrative
-    - Include no more than 2-3 main characters with simple, easy-to-pronounce names
-    - Set the story in a peaceful environment (bedroom, garden, or under stars)
-    - Weave in familiar bedtime routines and comfort objects
-    - Use simple words and short sentences (5-8 words)
-    - Include 2-3 soft sound effects (like "whoosh" of wind or "twinkle" of stars)
-    - Include mild, calming humor if appropriate
-    - Use a rhythmic, peaceful tone throughout
-
-    Format Structure:
-    - Clear beginning introducing the peaceful setting and characters
-    - Middle focusing on gentle activities and bedtime routines
-    - Calm ending with characters getting sleepy and going to bed
-
-    Remember: Every element of the story should guide children toward feeling calm and ready for sleep.
+def generate_story_and_image(story_topic, story_length="short"):
     """
-    
-    response = openai.ChatCompletion.create(
-        model="gpt-4",
-        messages=[{"role": "system", "content": "You are a bedtime storyteller."},
-                  {"role": "user", "content": prompt}],
-        max_tokens=500
+    Generates a bedtime story along with a relevant image.
+
+    Returns:
+    - Dictionary with story text, image URL, audio file path, and PDF file path.
+    """
+
+    # Generate the bedtime story
+    story_prompt = f"""
+    Create a gentle bedtime story for children aged 2-5 years old about {story_topic}.
+    Story length: {story_length.upper()} (2-3 minutes for short, 5-7 minutes for medium)
+    """
+
+    story_response = client.chat.completions.create(
+        model="gpt-4o",
+        messages=[{"role": "user", "content": story_prompt}],
+        temperature=0.7
     )
-    
-    return response["choices"][0]["message"]["content"]
 
-def generate_story_image(story_topic):
-    """Generates an illustration based on the story topic."""
-    image_url = "https://via.placeholder.com/500"  # Placeholder for API call
-    response = openai.Image.create(
-        prompt=f"A cozy and magical bedtime illustration about {story_topic}.",
-        n=1,
-        size="512x512"
+    story_text = story_response.choices[0].message.content.strip()
+
+    # Generate an image using DALL·E
+    image_prompt = f"Illustration for a children's bedtime story about {story_topic}. The scene should be warm and cozy."
+    image_response = client.images.generate(
+        model="dall-e-3",
+        prompt=image_prompt,
+        size="1024x1024",
+        n=1
     )
-    
-    image_url = response["data"][0]["url"]
-    image_path = "story_image.png"
-    
-    with open(image_path, "wb") as img_file:
-        img_file.write(requests.get(image_url).content)
+    image_url = image_response.data[0].url
 
-    return image_path
+    # Generate voice narration using OpenAI's TTS API
+    audio_file_path = generate_voice_narration(story_text)
 
-def generate_story_audio(story_text):
-    """Converts the generated story into voice narration."""
-    tts = gTTS(text=story_text, lang="en", slow=False)
-    audio_path = "story_audio.mp3"
-    tts.save(audio_path)
-    return audio_path
+    # Generate a downloadable PDF with the image
+    pdf_file_path = generate_pdf(story_topic, story_text, image_url)
 
-def generate_story_pdf(story_text, image_path):
-    """Creates a PDF with the story and illustration."""
-    pdf = FPDF()
-    pdf.set_auto_page_break(auto=True, margin=15)
-    pdf.add_page()
-    pdf.set_font("Arial", "B", 16)
-    
-    pdf.cell(200, 10, "Cozy Story Time", ln=True, align="C")
-    pdf.image(image_path, x=40, y=20, w=130)
-    
-    pdf.ln(80)  # Space after image
-    pdf.set_font("Arial", "", 12)
-    pdf.multi_cell(0, 10, story_text)
+    return {
+        "story": story_text,
+        "image": image_url,
+        "audio": audio_file_path,
+        "pdf": pdf_file_path
+    }
 
-    pdf_path = "story.pdf"
-    pdf.output(pdf_path)
-    
-    return pdf_path
+def generate_voice_narration(text):
+    """Converts text into speech using OpenAI's TTS API."""
+    response = client.audio.speech.create(
+        model="tts-1",
+        voice="alloy",
+        input=text
+    )
+
+    temp_audio = tempfile.NamedTemporaryFile(delete=False, suffix=".mp3")
+    temp_audio.write(response.content)
+    temp_audio.close()
+
+    return temp_audio.name
+
+def generate_pdf(title, story, image_url):
+    """Generates a well-formatted PDF file with text-wrapped story and illustration."""
+    temp_pdf = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf")
+
+    # Define PDF canvas
+    c = canvas.Canvas(temp_pdf.name, pagesize=letter)
+    page_width, page_height = letter  # Get page size
+
+    # Set title at the top
+    c.setFont("Helvetica-Bold", 18)
+    c.drawString(50, page_height - 80, f"Cozy Story Time 🛏️📖 - {title}")
+
+    # Download and add the image below the title
+    try:
+        response = requests.get(image_url, stream=True)
+        if response.status_code == 200:
+            img = Image.open(response.raw)
+            img_reader = ImageReader(img)
+
+            # Adjust image placement (below the title, centered)
+            img_width = 250  # Fixed width
+            img_height = 250  # Fixed height
+            img_x = (page_width - img_width) / 2  # Center image
+            img_y = page_height - 350  # Adjust Y-position below title
+
+            c.drawImage(img_reader, img_x, img_y, width=img_width, height=img_height)
+
+    except Exception as e:
+        print("Error fetching image:", e)
+
+    # Add story text below the image with proper line wrapping
+    text_start_y = img_y - 50  # Leave space below the image
+    c.setFont("Helvetica", 12)
+
+    # Define max text width to wrap lines properly
+    text_margin_x = 50
+    max_text_width = page_width - 100  # Leave margins
+
+    # Split the text into properly wrapped lines
+    from textwrap import wrap
+    wrapped_lines = []
+    for paragraph in story.split("\n"):  # Split paragraphs
+        wrapped_lines.extend(wrap(paragraph, width=90))  # Adjust width for wrapping
+        wrapped_lines.append("")  # Add blank line after each paragraph
+
+    # Add the wrapped text to the PDF
+    text_y_position = text_start_y
+    for line in wrapped_lines:
+        if text_y_position < 50:  # Start a new page if needed
+            c.showPage()
+            text_y_position = page_height - 100  # Reset text position for new page
+            c.setFont("Helvetica", 12)
+
+        c.drawString(text_margin_x, text_y_position, line)
+        text_y_position -= 18  # Move cursor down for next line
+
+    # Save the PDF
+    c.save()
+
+    return temp_pdf.name

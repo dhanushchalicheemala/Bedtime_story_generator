@@ -1,6 +1,7 @@
 import streamlit as st
 from story_generator import generate_story_and_image
 import time
+from concurrent.futures import ThreadPoolExecutor
 
 # 🎨 Set Streamlit Page Configuration
 st.set_page_config(page_title="Cozy Story Time 🛏️📖", layout="centered")
@@ -34,14 +35,19 @@ reset_tokens()
 story_topic = st.text_input("✨ Enter a Bedtime Story Topic:", "A little bunny who can't sleep")
 story_length = st.selectbox("🕒 Choose story length:", ["Short", "Medium"], help="Short: 2-3 minutes | Medium: 5-7 minutes")
 
+# 🎬 Display Token Counter Next to Button
+st.markdown(f"<p style='text-align:right; font-size:16px;'>🪙 {MAX_TOKENS - st.session_state.tokens}/{MAX_TOKENS} Stories Used</p>", unsafe_allow_html=True)
+
 # 🎬 Generate Story Button
 if st.button("Generate Story"):
     if st.session_state.tokens > 0:
         if story_topic.strip():
             st.info("🪄 Creating your Bedtime Story... Please wait ⏳")
 
-            # Generate story, image, audio, and PDF
-            result = generate_story_and_image(story_topic, story_length)
+            # Generate story, image, audio, and PDF in parallel
+            with ThreadPoolExecutor() as executor:
+                future = executor.submit(generate_story_and_image, story_topic, story_length)
+                result = future.result()
 
             # 📸 Display Image First
             st.subheader("🎨 Illustration for Your Story")
@@ -66,8 +72,9 @@ if st.button("Generate Story"):
                     mime="application/pdf"
                 )
 
-            # 🔢 Deduct a Token
+            # 🔢 Deduct a Token and Force UI Update
             st.session_state.tokens -= 1
+            st.experimental_rerun()
 
         else:
             st.warning("⚠️ Please enter a valid story topic.")

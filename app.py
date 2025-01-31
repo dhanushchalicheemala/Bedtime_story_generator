@@ -85,7 +85,7 @@ if st.button("Generate Story"):
         else:
             st.warning("⚠️ Please enter a valid story topic.")
     else:
-        st.error("🚫 You have reached the **maximum limit of 2 stories**. Please wait **8 hours** for token refresh.")
+        st.error("🚫 You have reached the **maximum limit of 4 stories**. Please wait **8 hours** for token refresh.")
 
 # 🎨 Footer
 st.markdown("---")

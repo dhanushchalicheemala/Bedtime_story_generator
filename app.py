@@ -2,7 +2,7 @@ import streamlit as st
 import time
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
-from story_generator import generate_story_and_image
+from story_generator import generate_story_text, generate_story_image, generate_story_audio, generate_story_pdf
 
 # 🎨 Set Streamlit Page Configuration
 st.set_page_config(page_title="Cozy Story Time 🛏️📖", layout="centered")
@@ -21,7 +21,7 @@ MAX_TOKENS = 2  # Number of allowed story generations
 if "tokens" not in st.session_state:
     st.session_state.tokens = MAX_TOKENS
     st.session_state.token_timestamp = time.time()
-    st.session_state.story_cache = {}  # Cache to store generated stories
+    st.session_state.story_cache = {}  # Cache for generated stories
 
 # Function to reset tokens after the set time period
 def reset_tokens():
@@ -40,6 +40,22 @@ story_length = st.selectbox("🕒 Choose story length:", ["Short", "Medium"], he
 # 📊 Show Token Usage
 st.markdown(f"🪙 **{MAX_TOKENS - st.session_state.tokens}/{MAX_TOKENS} Stories Used**", unsafe_allow_html=True)
 
+# Function to run tasks in parallel
+async def generate_story_assets(story_topic, story_length):
+    loop = asyncio.get_running_loop()
+    with ThreadPoolExecutor() as executor:
+        story_future = loop.run_in_executor(executor, generate_story_text, story_topic, story_length)
+        image_future = loop.run_in_executor(executor, generate_story_image, story_topic)
+        audio_future = loop.run_in_executor(executor, generate_story_audio, story_topic)
+        
+        # Wait for all tasks to complete
+        story, image, audio = await asyncio.gather(story_future, image_future, audio_future)
+        
+        # Generate PDF in a separate thread
+        pdf = await loop.run_in_executor(executor, generate_story_pdf, story, image)
+
+    return {"story": story, "image": image, "audio": audio, "pdf": pdf}
+
 # 🎬 Generate Story Button
 if st.button("Generate Story"):
     if st.session_state.tokens > 0:
@@ -50,11 +66,9 @@ if st.button("Generate Story"):
             if story_topic in st.session_state.story_cache:
                 result = st.session_state.story_cache[story_topic]
             else:
-                # Use ThreadPoolExecutor to run the story generation asynchronously
-                with ThreadPoolExecutor() as executor:
-                    future = executor.submit(generate_story_and_image, story_topic, story_length)
-                    result = future.result()
-                    st.session_state.story_cache[story_topic] = result  # Store in cache
+                # Run all tasks asynchronously
+                result = asyncio.run(generate_story_assets(story_topic, story_length))
+                st.session_state.story_cache[story_topic] = result  # Store in cache
 
             # 📸 Display Image First
             st.subheader("🎨 Illustration for Your Story")

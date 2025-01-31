@@ -1,7 +1,8 @@
 import streamlit as st
-from story_generator import generate_story_and_image
 import time
+import asyncio
 from concurrent.futures import ThreadPoolExecutor
+from story_generator import generate_story_and_image
 
 # 🎨 Set Streamlit Page Configuration
 st.set_page_config(page_title="Cozy Story Time 🛏️📖", layout="centered")
@@ -20,6 +21,7 @@ MAX_TOKENS = 2  # Number of allowed story generations
 if "tokens" not in st.session_state:
     st.session_state.tokens = MAX_TOKENS
     st.session_state.token_timestamp = time.time()
+    st.session_state.story_cache = {}  # Cache to store generated stories
 
 # Function to reset tokens after the set time period
 def reset_tokens():
@@ -35,8 +37,8 @@ reset_tokens()
 story_topic = st.text_input("✨ Enter a Bedtime Story Topic:", "A little bunny who can't sleep")
 story_length = st.selectbox("🕒 Choose story length:", ["Short", "Medium"], help="Short: 2-3 minutes | Medium: 5-7 minutes")
 
-# 🎬 Display Token Counter Next to Button
-st.markdown(f"<p style='text-align:right; font-size:16px;'>🪙 {MAX_TOKENS - st.session_state.tokens}/{MAX_TOKENS} Stories Used</p>", unsafe_allow_html=True)
+# 📊 Show Token Usage
+st.markdown(f"🪙 **{MAX_TOKENS - st.session_state.tokens}/{MAX_TOKENS} Stories Used**", unsafe_allow_html=True)
 
 # 🎬 Generate Story Button
 if st.button("Generate Story"):
@@ -44,10 +46,15 @@ if st.button("Generate Story"):
         if story_topic.strip():
             st.info("🪄 Creating your Bedtime Story... Please wait ⏳")
 
-            # Generate story, image, audio, and PDF in parallel
-            with ThreadPoolExecutor() as executor:
-                future = executor.submit(generate_story_and_image, story_topic, story_length)
-                result = future.result()
+            # Check cache to avoid redundant processing
+            if story_topic in st.session_state.story_cache:
+                result = st.session_state.story_cache[story_topic]
+            else:
+                # Use ThreadPoolExecutor to run the story generation asynchronously
+                with ThreadPoolExecutor() as executor:
+                    future = executor.submit(generate_story_and_image, story_topic, story_length)
+                    result = future.result()
+                    st.session_state.story_cache[story_topic] = result  # Store in cache
 
             # 📸 Display Image First
             st.subheader("🎨 Illustration for Your Story")
@@ -72,9 +79,8 @@ if st.button("Generate Story"):
                     mime="application/pdf"
                 )
 
-            # 🔢 Deduct a Token and Force UI Update
+            # 🔢 Deduct a Token
             st.session_state.tokens -= 1
-            st.experimental_rerun()
 
         else:
             st.warning("⚠️ Please enter a valid story topic.")

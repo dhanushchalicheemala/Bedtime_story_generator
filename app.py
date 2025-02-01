@@ -1,6 +1,5 @@
 import streamlit as st
 import time
-import asyncio
 from concurrent.futures import ThreadPoolExecutor
 from story_generator import generate_story_and_image
 
@@ -56,31 +55,38 @@ if st.button("Generate Story"):
                     result = future.result()
                     st.session_state.story_cache[story_topic] = result  # Store in cache
 
-            # 📸 Display Image First
-            st.subheader("🎨 Illustration for Your Story")
-            st.image(result["image"], caption="A cozy bedtime scene", use_container_width=True)
+            # Handle AI refusal
+            if result["story"].startswith("Sorry, I cannot create a story on this topic."):
+                st.error(result["story"])
+            else:
+                # 📸 Display Image
+                if result["image"]:
+                    st.subheader("🎨 Illustration for Your Story")
+                    st.image(result["image"], caption="A cozy bedtime scene", use_container_width=True)
 
-            # 🔊 Play Voice Narration
-            st.subheader("🔊 Listen to the Story")
-            with open(result["audio"], "rb") as audio_file:
-                st.audio(audio_file, format="audio/mp3")
+                # 🔊 Play Voice Narration
+                if result["audio"]:
+                    st.subheader("🔊 Listen to the Story")
+                    with open(result["audio"], "rb") as audio_file:
+                        st.audio(audio_file, format="audio/mp3")
 
-            # 📖 Display Story
-            st.subheader("📖 Your Generated Bedtime Story")
-            st.write(result["story"])
+                # 📖 Display Story
+                st.subheader("📖 Your Generated Bedtime Story")
+                st.write(result["story"])
 
-            # 📄 Download Story as PDF
-            st.subheader("📄 Download Story")
-            with open(result["pdf"], "rb") as pdf_file:
-                st.download_button(
-                    label="📥 Download as PDF",
-                    data=pdf_file,
-                    file_name=f"{story_topic}.pdf",
-                    mime="application/pdf"
-                )
+                # 📄 Download Story as PDF
+                if result["pdf"]:
+                    st.subheader("📄 Download Story")
+                    with open(result["pdf"], "rb") as pdf_file:
+                        st.download_button(
+                            label="📥 Download as PDF",
+                            data=pdf_file,
+                            file_name=f"{story_topic}.pdf",
+                            mime="application/pdf"
+                        )
 
-            # 🔢 Deduct a Token
-            st.session_state.tokens -= 1
+                # 🔢 Deduct a Token
+                st.session_state.tokens -= 1
 
         else:
             st.warning("⚠️ Please enter a valid story topic.")

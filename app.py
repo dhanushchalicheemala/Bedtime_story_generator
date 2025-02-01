@@ -1,5 +1,6 @@
 import streamlit as st
 import time
+import asyncio
 from concurrent.futures import ThreadPoolExecutor
 from story_generator import generate_story_and_image
 

@@ -2,7 +2,7 @@ import streamlit as st
 import time
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
-from story_generator import generate_story_and_image
+from story_generator import generate_story_and_image  # Ensure no indentation here
 
 # 🎨 Set Streamlit Page Configuration
 st.set_page_config(page_title="Cozy Story Time 🛏️📖", layout="centered")

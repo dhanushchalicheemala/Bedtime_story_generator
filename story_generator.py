@@ -18,12 +18,39 @@ def generate_story_and_image(story_topic, story_length="short"):
     - Dictionary with story text, image URL, audio file path, and PDF file path.
     """
 
-    # Generate the bedtime story
+# Generate the bedtime story
     story_prompt = f"""
     Create a gentle bedtime story for children aged 2-5 years old about {story_topic}.
-    Story length: {story_length.upper()} (2-3 minutes for short, 5-7 minutes for medium)
+    Story length: {story_length.upper()} ({'2-3 minutes' if story_length == 'short' else '5-7 minutes'})
+
+    **Story Requirements:**
+    - Transform the given topic into a calm, bedtime-appropriate narrative
+    - Include no more than 2-3 main characters with simple, easy-to-pronounce names
+    - Set the story in a peaceful environment (bedroom, garden, or under the stars)
+    - Weave in familiar bedtime routines and comfort objects
+    - Use simple words and short sentences (5-8 words)
+    - Include {'2-3' if story_length == 'short' else '3-4'} scenes
+    - Add gentle repetitive phrases that children can predict and say along
+    - Include 2-3 soft sound effects (like "whoosh" of wind or "twinkle" of stars)
+    - Add 1-2 interactive moments where children can mimic actions (stretching, yawning, counting)
+    - End with characters feeling sleepy and peaceful
+
+    **Writing Style:**
+    - Use soothing descriptive words (soft, cozy, warm, snuggly)
+    - Keep sentences simple and direct
+    - Include gentle parent/caregiver figures
+    - Avoid any scary elements or conflicts
+    - Include mild, calming humor if appropriate
+    - Use a rhythmic, peaceful tone throughout
+
+    **Format Structure:**
+    - Clear beginning introducing the peaceful setting and characters
+    - Middle focusing on gentle activities and bedtime routines
+    - Calm ending with characters getting sleepy and going to bed
+    - Simple questions or prompts in [brackets] for parent-child interaction
     """
 
+# Request story generation from OpenAI
     story_response = client.chat.completions.create(
         model="gpt-4o",
         messages=[{"role": "user", "content": story_prompt}],

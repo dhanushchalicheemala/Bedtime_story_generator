@@ -18,10 +18,10 @@ def generate_story_and_image(story_topic, story_length="short"):
     - Dictionary with story text, image URL, audio file path, and PDF file path.
     """
 
-# Generate the bedtime story
+    # Generate the bedtime story
     story_prompt = f"""
     **IMPORTANT INSTRUCTIONS FOR AI:**
-    - If the topic contains **violence**, **vulgarity**, **scary content**, **evil characters**, **battles**, or anything inappropriate for children aged 3-5, **DO NOT**  create the story. 
+    - If the topic contains **violence**, **vulgarity**, **scary content**, **evil characters**, **battles**, or anything inappropriate for children aged 3-5, **DO NOT** create the story. 
     - In such cases, respond with: **"Sorry, I cannot create a story on this topic."**
     - If the topic is unclear or potentially inappropriate, err on the side of caution and do not generate the story.
 
@@ -60,7 +60,7 @@ def generate_story_and_image(story_topic, story_length="short"):
     - Simple questions or prompts in [brackets] for parent-child interaction
     """
 
-# Request story generation from OpenAI
+    # Request story generation from OpenAI
     story_response = client.chat.completions.create(
         model="gpt-4o",
         messages=[{"role": "user", "content": story_prompt}],
@@ -68,6 +68,11 @@ def generate_story_and_image(story_topic, story_length="short"):
     )
 
     story_text = story_response.choices[0].message.content.strip()
+
+    # 🚩 Check if the AI refused to create the story
+    refusal_message = "Sorry, I cannot create a story on this topic."
+    if refusal_message in story_text:
+        return {"story": refusal_message, "image": None, "audio": None, "pdf": None}
 
     # Generate an image using DALL·E
     image_prompt = f"Illustration for a children's bedtime story about {story_topic}. The scene should be warm and cozy."
@@ -112,7 +117,7 @@ def generate_pdf(title, story, image_url):
 
     # Define PDF canvas
     c = canvas.Canvas(temp_pdf.name, pagesize=letter)
-    page_width, page_height = letter  # Get page size
+    page_width, page_height = letter
 
     # Set title at the top
     c.setFont("Helvetica-Bold", 18)
@@ -125,44 +130,33 @@ def generate_pdf(title, story, image_url):
             img = Image.open(response.raw)
             img_reader = ImageReader(img)
 
-            # Adjust image placement (below the title, centered)
-            img_width = 250  # Fixed width
-            img_height = 250  # Fixed height
-            img_x = (page_width - img_width) / 2  # Center image
-            img_y = page_height - 350  # Adjust Y-position below title
+            img_width, img_height = 250, 250
+            img_x = (page_width - img_width) / 2
+            img_y = page_height - 350
 
             c.drawImage(img_reader, img_x, img_y, width=img_width, height=img_height)
-
     except Exception as e:
         print("Error fetching image:", e)
 
-    # Add story text below the image with proper line wrapping
-    text_start_y = img_y - 50  # Leave space below the image
+    # Add story text below the image
+    text_start_y = img_y - 50
     c.setFont("Helvetica", 12)
 
-    # Define max text width to wrap lines properly
-    text_margin_x = 50
-    max_text_width = page_width - 100  # Leave margins
-
-    # Split the text into properly wrapped lines
     from textwrap import wrap
     wrapped_lines = []
-    for paragraph in story.split("\n"):  # Split paragraphs
-        wrapped_lines.extend(wrap(paragraph, width=90))  # Adjust width for wrapping
-        wrapped_lines.append("")  # Add blank line after each paragraph
+    for paragraph in story.split("\n"):
+        wrapped_lines.extend(wrap(paragraph, width=90))
+        wrapped_lines.append("")
 
-    # Add the wrapped text to the PDF
     text_y_position = text_start_y
     for line in wrapped_lines:
-        if text_y_position < 50:  # Start a new page if needed
+        if text_y_position < 50:
             c.showPage()
-            text_y_position = page_height - 100  # Reset text position for new page
+            text_y_position = page_height - 100
             c.setFont("Helvetica", 12)
 
-        c.drawString(text_margin_x, text_y_position, line)
-        text_y_position -= 18  # Move cursor down for next line
+        c.drawString(50, text_y_position, line)
+        text_y_position -= 18
 
-    # Save the PDF
     c.save()
-
     return temp_pdf.name

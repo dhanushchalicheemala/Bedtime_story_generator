@@ -6,6 +6,7 @@ from PIL import Image
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 from reportlab.lib.utils import ImageReader
+from textwrap import wrap
 
 # Initialize OpenAI client
 client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
@@ -122,7 +123,7 @@ def generate_pdf(title, story, image_url):
     c.setFont("Helvetica-Bold", 18)
     c.drawString(50, page_height - 80, f"Cozy Story Time - {title}")
 
-   img_y = page_height - 350  # Default Y-position for text if no image
+    img_y = page_height - 350  # Default Y-position for text if no image
 
     # Add image if available
     if image_url:
@@ -132,7 +133,7 @@ def generate_pdf(title, story, image_url):
                 img = Image.open(response.raw)
                 img_reader = ImageReader(img)
                 c.drawImage(img_reader, 150, page_height - 350, width=250, height=250)
-		img_y -= 250  # Adjust for image height
+                img_y -= 250  # Adjust for image height
         except Exception as e:
             print("Error fetching image:", e)
 
@@ -145,7 +146,6 @@ def generate_pdf(title, story, image_url):
     max_text_width = page_width - 100  # Leave margins
 
     # Split the text into properly wrapped lines
-    from textwrap import wrap
     wrapped_lines = []
     for paragraph in story.split("\n"):  # Split paragraphs
         wrapped_lines.extend(wrap(paragraph, width=90))  # Adjust width for wrapping

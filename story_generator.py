@@ -20,7 +20,12 @@ def generate_story_and_image(story_topic, story_length="short"):
 
 # Generate the bedtime story
     story_prompt = f"""
-    Create a gentle bedtime story for children aged 2-5 years old about {story_topic}.
+    **IMPORTANT INSTRUCTIONS FOR AI:**
+    - If the topic contains **violence**, **vulgarity**, **scary content**, **evil characters**, **battles**, or anything inappropriate for children aged 3-5, **DO NOT**  create the story. 
+    - In such cases, respond with: **"Sorry, I cannot create a story on this topic."**
+    - If the topic is unclear or potentially inappropriate, err on the side of caution and do not generate the story.
+
+    Now, create a gentle bedtime story for children aged 3-5 years old about {story_topic}.
     Story length: {story_length.upper()} ({'2-3 minutes' if story_length == 'short' else '5-7 minutes'})
 
     **Story Requirements:**
@@ -34,7 +39,11 @@ def generate_story_and_image(story_topic, story_length="short"):
     - Include 2-3 soft sound effects (like "whoosh" of wind or "twinkle" of stars)
     - Add 1-2 interactive moments where children can mimic actions (stretching, yawning, counting)
     - End with characters feeling sleepy and peaceful
-    - Follow these Strict Guidelines - No violence, vulgarity, or scary content, If unsure about a topic, reply: 'Sorry, I cannot create a story on this topic.'
+
+    **Strict Guidelines:**
+    - **No violence, battles, scary content, evil characters, or complex conflicts.**
+    - **No inappropriate themes or language.**
+    - If the topic doesn’t fit these guidelines, reply: **"Sorry, I cannot create a story on this topic."**
 
     **Writing Style:**
     - Use soothing descriptive words (soft, cozy, warm, snuggly)

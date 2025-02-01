@@ -122,6 +122,8 @@ def generate_pdf(title, story, image_url):
     c.setFont("Helvetica-Bold", 18)
     c.drawString(50, page_height - 80, f"Cozy Story Time - {title}")
 
+   img_y = page_height - 350  # Default Y-position for text if no image
+
     # Add image if available
     if image_url:
         try:
@@ -130,6 +132,7 @@ def generate_pdf(title, story, image_url):
                 img = Image.open(response.raw)
                 img_reader = ImageReader(img)
                 c.drawImage(img_reader, 150, page_height - 350, width=250, height=250)
+		img_y -= 250  # Adjust for image height
         except Exception as e:
             print("Error fetching image:", e)
 

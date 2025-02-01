@@ -75,14 +75,18 @@ def generate_story_and_image(story_topic, story_length="short"):
         return {"story": refusal_message, "image": None, "audio": None, "pdf": None}
 
     # Generate an image using DALL·E
-    image_prompt = f"Illustration for a children's bedtime story about {story_topic}. The scene should be warm and cozy."
-    image_response = client.images.generate(
-        model="dall-e-3",
-        prompt=image_prompt,
-        size="1024x1024",
-        n=1
-    )
-    image_url = image_response.data[0].url
+    image_url = None
+    try:
+        image_prompt = f"Illustration for a children's bedtime story about {story_topic}. The scene should be warm and cozy."
+        image_response = client.images.generate(
+            model="dall-e-3",
+            prompt=image_prompt,
+            size="1024x1024",
+            n=1
+        )
+        image_url = image_response.data[0].url
+    except Exception as e:
+        print(f"Image generation error: {e}")
 
     # Generate voice narration using OpenAI's TTS API
     audio_file_path = generate_voice_narration(story_text)

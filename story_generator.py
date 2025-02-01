@@ -73,33 +73,10 @@ def generate_story_and_image(story_topic, story_length="short"):
     if "Sorry, I cannot create a story on this topic." in story_text:
         return {"story": story_text, "image": None, "audio": None, "pdf": None}
 
-    # Generate an image using DALL·E
-    image_url = None
-    try:
-        image_prompt = f"Illustration for a children's bedtime story about {story_topic}. The scene should be warm and cozy."
-        image_response = client.images.generate(
-            model="dall-e-3",
-            prompt=image_prompt,
-            size="1024x1024",
-            n=1
-        )
-        image_url = image_response.data[0].url
-    except Exception as e:
-        print(f"Error generating image: {e}")
-
-    # Generate voice narration using OpenAI's TTS API
-    audio_file_path = None
-    try:
-        audio_file_path = generate_voice_narration(story_text)
-    except Exception as e:
-        print(f"Error generating audio: {e}")
-
-    # Generate a downloadable PDF with the image
-    pdf_file_path = None
-    try:
-        pdf_file_path = generate_pdf(story_topic, story_text, image_url)
-    except Exception as e:
-        print(f"Error generating PDF: {e}")
+    # Proceed only if the story is generated successfully
+    image_url = generate_image(story_topic)
+    audio_file_path = generate_voice_narration(story_text)
+    pdf_file_path = generate_pdf(story_topic, story_text, image_url)
 
     return {
         "story": story_text,
@@ -108,19 +85,38 @@ def generate_story_and_image(story_topic, story_length="short"):
         "pdf": pdf_file_path
     }
 
+def generate_image(story_topic):
+    """Generates an image using DALL·E."""
+    try:
+        image_prompt = f"Illustration for a children's bedtime story about {story_topic}. The scene should be warm and cozy."
+        image_response = client.images.generate(
+            model="dall-e-3",
+            prompt=image_prompt,
+            size="1024x1024",
+            n=1
+        )
+        return image_response.data[0].url
+    except Exception as e:
+        print(f"Error generating image: {e}")
+        return None
+
 def generate_voice_narration(text):
     """Converts text into speech using OpenAI's TTS API."""
-    response = client.audio.speech.create(
-        model="tts-1",
-        voice="alloy",
-        input=text
-    )
+    try:
+        response = client.audio.speech.create(
+            model="tts-1",
+            voice="alloy",
+            input=text
+        )
 
-    temp_audio = tempfile.NamedTemporaryFile(delete=False, suffix=".mp3")
-    temp_audio.write(response.content)
-    temp_audio.close()
+        temp_audio = tempfile.NamedTemporaryFile(delete=False, suffix=".mp3")
+        temp_audio.write(response.content)
+        temp_audio.close()
 
-    return temp_audio.name
+        return temp_audio.name
+    except Exception as e:
+        print(f"Error generating audio: {e}")
+        return None
 
 def generate_pdf(title, story, image_url):
     """Generates a well-formatted PDF file with text-wrapped story and illustration."""

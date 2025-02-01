@@ -125,21 +125,22 @@ def generate_pdf(title, story, image_url):
 
     # Download and add the image below the title
     try:
-        response = requests.get(image_url, stream=True)
-        if response.status_code == 200:
-            img = Image.open(response.raw)
-            img_reader = ImageReader(img)
+        if image_url:  # ✅ Ensure image exists
+            response = requests.get(image_url, stream=True)
+            if response.status_code == 200:
+                img = Image.open(response.raw)
+                img_reader = ImageReader(img)
 
-            img_width, img_height = 250, 250
-            img_x = (page_width - img_width) / 2
-            img_y = page_height - 350
+                img_width, img_height = 250, 250
+                img_x = (page_width - img_width) / 2
+                img_y = page_height - 350
 
-            c.drawImage(img_reader, img_x, img_y, width=img_width, height=img_height)
+                c.drawImage(img_reader, img_x, img_y, width=img_width, height=img_height)
     except Exception as e:
         print("Error fetching image:", e)
 
     # Add story text below the image
-    text_start_y = img_y - 50
+    text_start_y = page_height - 400 if image_url else page_height - 100  # Adjust position
     c.setFont("Helvetica", 12)
 
     from textwrap import wrap

@@ -34,6 +34,7 @@ def generate_story_and_image(story_topic, story_length="short"):
     - Include 2-3 soft sound effects (like "whoosh" of wind or "twinkle" of stars)
     - Add 1-2 interactive moments where children can mimic actions (stretching, yawning, counting)
     - End with characters feeling sleepy and peaceful
+    - Follow these Strict Guidelines - No violence, vulgarity, or scary content, If unsure about a topic, reply: 'Sorry, I cannot create a story on this topic.'
 
     **Writing Style:**
     - Use soothing descriptive words (soft, cozy, warm, snuggly)

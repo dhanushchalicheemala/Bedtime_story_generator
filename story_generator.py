@@ -70,24 +70,36 @@ def generate_story_and_image(story_topic, story_length="short"):
     story_text = story_response.choices[0].message.content.strip()
 
     # Check if AI refused to generate the story
-    if story_text == "Sorry, I cannot create a story on this topic.":
+    if "Sorry, I cannot create a story on this topic." in story_text:
         return {"story": story_text, "image": None, "audio": None, "pdf": None}
 
     # Generate an image using DALL·E
-    image_prompt = f"Illustration for a children's bedtime story about {story_topic}. The scene should be warm and cozy."
-    image_response = client.images.generate(
-        model="dall-e-3",
-        prompt=image_prompt,
-        size="1024x1024",
-        n=1
-    )
-    image_url = image_response.data[0].url
+    image_url = None
+    try:
+        image_prompt = f"Illustration for a children's bedtime story about {story_topic}. The scene should be warm and cozy."
+        image_response = client.images.generate(
+            model="dall-e-3",
+            prompt=image_prompt,
+            size="1024x1024",
+            n=1
+        )
+        image_url = image_response.data[0].url
+    except Exception as e:
+        print(f"Error generating image: {e}")
 
     # Generate voice narration using OpenAI's TTS API
-    audio_file_path = generate_voice_narration(story_text)
+    audio_file_path = None
+    try:
+        audio_file_path = generate_voice_narration(story_text)
+    except Exception as e:
+        print(f"Error generating audio: {e}")
 
     # Generate a downloadable PDF with the image
-    pdf_file_path = generate_pdf(story_topic, story_text, image_url)
+    pdf_file_path = None
+    try:
+        pdf_file_path = generate_pdf(story_topic, story_text, image_url)
+    except Exception as e:
+        print(f"Error generating PDF: {e}")
 
     return {
         "story": story_text,
@@ -122,26 +134,27 @@ def generate_pdf(title, story, image_url):
     c.setFont("Helvetica-Bold", 18)
     c.drawString(50, page_height - 80, f"Cozy Story Time 🛏️📖 - {title}")
 
-    # Download and add the image below the title
-    try:
-        response = requests.get(image_url, stream=True)
-        if response.status_code == 200:
-            img = Image.open(response.raw)
-            img_reader = ImageReader(img)
+    # Download and add the image below the title (if available)
+    if image_url:
+        try:
+            response = requests.get(image_url, stream=True)
+            if response.status_code == 200:
+                img = Image.open(response.raw)
+                img_reader = ImageReader(img)
 
-            # Adjust image placement (below the title, centered)
-            img_width = 250  # Fixed width
-            img_height = 250  # Fixed height
-            img_x = (page_width - img_width) / 2  # Center image
-            img_y = page_height - 350  # Adjust Y-position below title
+                # Adjust image placement (below the title, centered)
+                img_width = 250  # Fixed width
+                img_height = 250  # Fixed height
+                img_x = (page_width - img_width) / 2  # Center image
+                img_y = page_height - 350  # Adjust Y-position below title
 
-            c.drawImage(img_reader, img_x, img_y, width=img_width, height=img_height)
+                c.drawImage(img_reader, img_x, img_y, width=img_width, height=img_height)
 
-    except Exception as e:
-        print("Error fetching image:", e)
+        except Exception as e:
+            print("Error fetching image:", e)
 
     # Add story text below the image with proper line wrapping
-    text_start_y = img_y - 50  # Leave space below the image
+    text_start_y = (page_height - 350) - 50 if image_url else page_height - 100
     c.setFont("Helvetica", 12)
 
     # Define max text width to wrap lines properly

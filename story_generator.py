@@ -69,24 +69,19 @@ def generate_story_and_image(story_topic, story_length="short"):
 
     story_text = story_response.choices[0].message.content.strip()
 
-    # 🚩 Check if the AI refused to create the story
-    refusal_message = "Sorry, I cannot create a story on this topic."
-    if refusal_message in story_text:
-        return {"story": refusal_message, "image": None, "audio": None, "pdf": None}
+    # Check if AI refused to generate the story
+    if story_text == "Sorry, I cannot create a story on this topic.":
+        return {"story": story_text, "image": None, "audio": None, "pdf": None}
 
     # Generate an image using DALL·E
-    image_url = None
-    try:
-        image_prompt = f"Illustration for a children's bedtime story about {story_topic}. The scene should be warm and cozy."
-        image_response = client.images.generate(
-            model="dall-e-3",
-            prompt=image_prompt,
-            size="1024x1024",
-            n=1
-        )
-        image_url = image_response.data[0].url
-    except Exception as e:
-        print(f"Image generation error: {e}")
+    image_prompt = f"Illustration for a children's bedtime story about {story_topic}. The scene should be warm and cozy."
+    image_response = client.images.generate(
+        model="dall-e-3",
+        prompt=image_prompt,
+        size="1024x1024",
+        n=1
+    )
+    image_url = image_response.data[0].url
 
     # Generate voice narration using OpenAI's TTS API
     audio_file_path = generate_voice_narration(story_text)
@@ -121,7 +116,7 @@ def generate_pdf(title, story, image_url):
 
     # Define PDF canvas
     c = canvas.Canvas(temp_pdf.name, pagesize=letter)
-    page_width, page_height = letter
+    page_width, page_height = letter  # Get page size
 
     # Set title at the top
     c.setFont("Helvetica-Bold", 18)
@@ -129,39 +124,49 @@ def generate_pdf(title, story, image_url):
 
     # Download and add the image below the title
     try:
-        if image_url:  # ✅ Ensure image exists
-            response = requests.get(image_url, stream=True)
-            if response.status_code == 200:
-                img = Image.open(response.raw)
-                img_reader = ImageReader(img)
+        response = requests.get(image_url, stream=True)
+        if response.status_code == 200:
+            img = Image.open(response.raw)
+            img_reader = ImageReader(img)
 
-                img_width, img_height = 250, 250
-                img_x = (page_width - img_width) / 2
-                img_y = page_height - 350
+            # Adjust image placement (below the title, centered)
+            img_width = 250  # Fixed width
+            img_height = 250  # Fixed height
+            img_x = (page_width - img_width) / 2  # Center image
+            img_y = page_height - 350  # Adjust Y-position below title
 
-                c.drawImage(img_reader, img_x, img_y, width=img_width, height=img_height)
+            c.drawImage(img_reader, img_x, img_y, width=img_width, height=img_height)
+
     except Exception as e:
         print("Error fetching image:", e)
 
-    # Add story text below the image
-    text_start_y = page_height - 400 if image_url else page_height - 100  # Adjust position
+    # Add story text below the image with proper line wrapping
+    text_start_y = img_y - 50  # Leave space below the image
     c.setFont("Helvetica", 12)
 
+    # Define max text width to wrap lines properly
+    text_margin_x = 50
+    max_text_width = page_width - 100  # Leave margins
+
+    # Split the text into properly wrapped lines
     from textwrap import wrap
     wrapped_lines = []
-    for paragraph in story.split("\n"):
-        wrapped_lines.extend(wrap(paragraph, width=90))
-        wrapped_lines.append("")
+    for paragraph in story.split("\n"):  # Split paragraphs
+        wrapped_lines.extend(wrap(paragraph, width=90))  # Adjust width for wrapping
+        wrapped_lines.append("")  # Add blank line after each paragraph
 
+    # Add the wrapped text to the PDF
     text_y_position = text_start_y
     for line in wrapped_lines:
-        if text_y_position < 50:
+        if text_y_position < 50:  # Start a new page if needed
             c.showPage()
-            text_y_position = page_height - 100
+            text_y_position = page_height - 100  # Reset text position for new page
             c.setFont("Helvetica", 12)
 
-        c.drawString(50, text_y_position, line)
-        text_y_position -= 18
+        c.drawString(text_margin_x, text_y_position, line)
+        text_y_position -= 18  # Move cursor down for next line
 
+    # Save the PDF
     c.save()
+
     return temp_pdf.name

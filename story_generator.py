@@ -133,12 +133,33 @@ def generate_pdf(title, story, image_url):
         except Exception as e:
             print("Error fetching image:", e)
 
-    # Add story text
+    # Add story text below the image with proper line wrapping
+    text_start_y = img_y - 50  # Leave space below the image
     c.setFont("Helvetica", 12)
-    y = page_height - 400
-    for line in story.split('\n'):
-        c.drawString(50, y, line)
-        y -= 18
 
+    # Define max text width to wrap lines properly
+    text_margin_x = 50
+    max_text_width = page_width - 100  # Leave margins
+
+    # Split the text into properly wrapped lines
+    from textwrap import wrap
+    wrapped_lines = []
+    for paragraph in story.split("\n"):  # Split paragraphs
+        wrapped_lines.extend(wrap(paragraph, width=90))  # Adjust width for wrapping
+        wrapped_lines.append("")  # Add blank line after each paragraph
+
+    # Add the wrapped text to the PDF
+    text_y_position = text_start_y
+    for line in wrapped_lines:
+        if text_y_position < 50:  # Start a new page if needed
+            c.showPage()
+            text_y_position = page_height - 100  # Reset text position for new page
+            c.setFont("Helvetica", 12)
+
+        c.drawString(text_margin_x, text_y_position, line)
+        text_y_position -= 18  # Move cursor down for next line
+
+    # Save the PDF
     c.save()
+
     return temp_pdf.name

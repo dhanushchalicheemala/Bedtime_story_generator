@@ -3,6 +3,12 @@
 Have you ever wished for an AI-powered bedtime story generator that creates soothing, personalized stories for kids?
 I built "Cozy Story Time 🛏️📖", a fun and interactive web app that generates AI-powered bedtime stories.
 
+**Demo Video**
+
+Watch a demonstration of the app in action:
+
+<video src="demo.mp4" controls title="Cozy Story Time Demo" width="640" height="360"></video>
+
 **Core Features of the App**
 1. AI-Generated Bedtime Stories🌙
 Users can enter a story topic, and the app creates a short, soothing story following bedtime storytelling best practices.

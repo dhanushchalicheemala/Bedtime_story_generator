@@ -5,9 +5,9 @@ I built "Cozy Story Time 🛏️📖", a fun and interactive web app that genera
 
 **Demo Video**
 
-📺 [Click here to download and view the demo video](demo.mp4)
+![Cozy Story Time Demo](demo.gif)
 
-Note: The video is available in the repository. You can download it and play it locally to see the app in action.
+*Above: Demonstration of the Cozy Story Time app in action*
 
 **Core Features of the App**
 1. AI-Generated Bedtime Stories🌙

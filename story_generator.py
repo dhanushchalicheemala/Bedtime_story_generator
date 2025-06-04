@@ -2,22 +2,34 @@ import openai
 import os
 import tempfile
 import requests
+import time
 from PIL import Image
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 from reportlab.lib.utils import ImageReader
 from textwrap import wrap
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Initialize OpenAI client
 client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-def generate_story_and_image(story_topic, story_length="short"):
+def generate_story_and_image(story_topic, story_length="short", child_name=""):
     """
     Generates a bedtime story along with a relevant image.
     Returns:
-    - Dictionary with story text, image URL, audio file path, and PDF file path.
+    - Dictionary with story text, image URL, audio file path, PDF file path, and timing information.
     """
+    
+    # Initialize timing dictionary
+    timings = {}
+    total_start_time = time.time()
 
+    # Prepare the main character based on whether a child's name was provided
+    main_character = f"{child_name}" if child_name.strip() else "the main character"
+    
     story_prompt = f"""
     **IMPORTANT INSTRUCTIONS FOR AI:**
     - If the topic contains **violence**, **vulgarity**, **scary content**, **evil characters**, **battles**, or anything inappropriate for children aged 3-5, **DO NOT** create the story. 
@@ -25,7 +37,8 @@ def generate_story_and_image(story_topic, story_length="short"):
     - If the topic is unclear or potentially inappropriate, err on the side of caution and do not generate the story.
 
     Now, create a gentle bedtime story for children aged 3-5 years old about {story_topic}.
-    Story length: {story_length.upper()} ({'2-3 minutes' if story_length == 'short' else '5-7 minutes'})
+    Story length: {story_length.upper()} ({"2-3 minutes" if story_length == "short" else "5-7 minutes"})
+    {'Make ' + main_character + ' the main character of the story.' if child_name.strip() else ''}
 
     **Story Requirements:**
     - Transform the given topic into a calm, bedtime-appropriate narrative
@@ -42,7 +55,7 @@ def generate_story_and_image(story_topic, story_length="short"):
     **Strict Guidelines:**
     - **No violence, battles, scary content, evil characters, or complex conflicts.**
     - **No inappropriate themes or language.**
-    - If the topic doesn’t fit these guidelines, reply: **"Sorry, I cannot create a story on this topic."**
+    - If the topic doesn't fit these guidelines, reply: **"Sorry, I cannot create a story on this topic."**
 
     **Writing Style:**
     - Use soothing descriptive words (soft, cozy, warm, snuggly)
@@ -59,34 +72,68 @@ def generate_story_and_image(story_topic, story_length="short"):
     - Simple questions or prompts in [brackets] for parent-child interaction
     """
 
-    # Request story generation from OpenAI
+    # Generate story with timing
+    story_start_time = time.time()
     story_response = client.chat.completions.create(
         model="gpt-4o",
         messages=[{"role": "user", "content": story_prompt}],
         temperature=0.7
     )
+    story_end_time = time.time()
+    timings['story_generation'] = round(story_end_time - story_start_time, 2)
 
     story_text = story_response.choices[0].message.content.strip()
 
     # If AI refuses to create the story, skip further generation
     if "Sorry, I cannot create a story on this topic." in story_text:
-        return {"story": story_text, "image": None, "audio": None, "pdf": None}
+        timings['total_time'] = round(time.time() - total_start_time, 2)
+        return {
+            "story": story_text, 
+            "image": None, 
+            "audio": None, 
+            "pdf": None,
+            "timings": timings
+        }
 
-    image_url = generate_image(story_topic)
+    # Generate image with timing
+    image_start_time = time.time()
+    image_url = generate_image(story_topic, child_name)
+    image_end_time = time.time()
+    timings['image_generation'] = round(image_end_time - image_start_time, 2)
+
+    # Generate audio with timing
+    audio_start_time = time.time()
     audio_file_path = generate_voice_narration(story_text)
+    audio_end_time = time.time()
+    timings['audio_generation'] = round(audio_end_time - audio_start_time, 2)
+
+    # Generate PDF with timing
+    pdf_start_time = time.time()
     pdf_file_path = generate_pdf(story_topic, story_text, image_url)
+    pdf_end_time = time.time()
+    timings['pdf_generation'] = round(pdf_end_time - pdf_start_time, 2)
+
+    # Calculate total time
+    total_end_time = time.time()
+    timings['total_time'] = round(total_end_time - total_start_time, 2)
 
     return {
         "story": story_text,
         "image": image_url,
         "audio": audio_file_path,
-        "pdf": pdf_file_path
+        "pdf": pdf_file_path,
+        "timings": timings
     }
 
-def generate_image(story_topic):
+def generate_image(story_topic, child_name=""):
     """Generates an image using DALL·E."""
     try:
-        image_prompt = f"Illustration for a children's bedtime story about {story_topic}. The scene should be warm and cozy."
+        # Prepare the image prompt based on whether a child's name was provided
+        if child_name.strip():
+            image_prompt = f"Illustration for a children's bedtime story about {story_topic} with a child named {child_name} as the main character. The scene should be warm and cozy. Do not show text or names in the image."
+        else:
+            image_prompt = f"Illustration for a children's bedtime story about {story_topic}. The scene should be warm and cozy."
+            
         response = client.images.generate(
             model="dall-e-3",
             prompt=image_prompt,

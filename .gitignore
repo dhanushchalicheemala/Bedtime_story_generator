@@ -1,1 +1,17 @@
-google_sheets_credentials.json 
+# Credentials and environment variables
+google_sheets_credentials.json
+.env
+
+# Python cache files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+
+# Local configuration
+.idea/
+.vscode/
